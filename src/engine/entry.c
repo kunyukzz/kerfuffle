@@ -1,7 +1,9 @@
-#include "engine/core/define.h"
+#include "engine/core/application.h"
 
 int main(void)
 {
-    LOG_INFO("Kerfuffle");
+    application_t app;
+    application_init(&app);
+    application_run(&app);
     return 0;
 }
