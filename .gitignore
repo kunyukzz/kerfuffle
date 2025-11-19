@@ -1,0 +1,6 @@
+bin/
+obj/
+capture/
+.cache/
+compile_commands.json
+
