@@ -2,16 +2,9 @@
 
 // std
 #include <stdlib.h>
+#include <string.h>
 
 static window_system_t *g_ws = NULL;
-
-static void pointer_clbk(GLFWwindow *window, double xpos, double ypos)
-{
-    (void)window;
-    (void)xpos;
-    (void)ypos;
-    // printf("Mouse position: %.1f, %.1f\n", xpos, ypos);
-}
 
 static void window_clbk(GLFWwindow *window, int width, int height)
 {
@@ -25,6 +18,7 @@ window_system_t *window_sys_init(int width, int height, const char *title)
     // TODO: use proper allocator
     window_system_t *ws = malloc(sizeof(window_system_t));
     if (!ws) return NULL;
+    memset(ws, 0, sizeof(window_system_t));
 
     ws->width = width;
     ws->height = height;
@@ -66,7 +60,6 @@ window_system_t *window_sys_init(int width, int height, const char *title)
         glfwSetWindowPos(ws->handle, window_x, window_y);
     }
 
-    glfwSetCursorPosCallback(ws->handle, pointer_clbk);
     glfwSetFramebufferSizeCallback(ws->handle, window_clbk);
 
     // NOTE: show window again after set window position.
