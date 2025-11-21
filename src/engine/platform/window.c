@@ -1,7 +1,6 @@
 #include "window.h"
 
 // std
-#include <stdlib.h>
 #include <string.h>
 
 static window_system_t *g_ws = NULL;
@@ -13,10 +12,10 @@ static void window_clbk(GLFWwindow *window, int width, int height)
     LOG_DEBUG("Window resized to: %d x %d", width, height);
 }
 
-window_system_t *window_sys_init(int width, int height, const char *title)
+window_system_t *window_sys_init(arena_alloc_t *arena, int width, int height,
+                                 const char *title)
 {
-    // TODO: use proper allocator
-    window_system_t *ws = malloc(sizeof(window_system_t));
+    window_system_t *ws = arena_alloc(arena, sizeof(window_system_t));
     if (!ws) return NULL;
     memset(ws, 0, sizeof(window_system_t));
 
@@ -77,7 +76,7 @@ void window_sys_kill(window_system_t *ws)
     glfwDestroyWindow(ws->handle);
     glfwTerminate();
 
-    free(ws);
+    memset(ws, 0, sizeof(window_system_t));
     LOG_INFO("Window System Kill");
 }
 

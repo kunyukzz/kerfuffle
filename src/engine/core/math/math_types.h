@@ -60,7 +60,7 @@ typedef union VEC4
 #ifdef __SSE__
     __m128 simd;
 #endif
-} ALIGN(32) vec4;
+} ALIGN(16) vec4;
 
 // Matrix types (use Colum-major)
 typedef union MAT4

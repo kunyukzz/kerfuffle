@@ -120,13 +120,14 @@ static void cursor_enter_callback(GLFWwindow *window, int entered)
 }
 
 // Input System
-input_system_t *input_sys_init(void)
+input_system_t *input_sys_init(arena_alloc_t *arena)
 {
     // TODO: use memory allocator
-    input_system_t *ins = malloc(sizeof(input_system_t));
+    input_system_t *ins = arena_alloc(arena, sizeof(input_system_t));
     if (!ins) return NULL;
     memset(ins, 0, sizeof(input_system_t));
 
+    ins->arena = arena;
     ins->is_inside_window = false;
 
     GLFWwindow *win = window_sys_get_handle();
@@ -148,7 +149,6 @@ void input_sys_kill(input_system_t *ins)
     if (!ins) return;
 
     memset(ins, 0, sizeof(input_system_t));
-    free(ins);
     LOG_INFO("Input System Kill");
 }
 

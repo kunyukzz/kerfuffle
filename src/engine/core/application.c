@@ -1,9 +1,41 @@
 #include "application.h"
+#include "engine/core/memory/memory.h"
 
 b8 application_init(application_t *app)
 {
-    app->ws = window_sys_init(1280, 720, "Kerfuffle");
-    app->ip = input_sys_init();
+    u64 estimated_memory = 1 * 1024 * 1024;
+    if (!memory_sys_init(estimated_memory))
+    {
+        LOG_ERROR("Failed to init memory system with estimated size: %lu",
+                  estimated_memory);
+        return false;
+    }
+
+    arena_create(128 * 1024, &app->arena, NULL);
+
+    app->ws = window_sys_init(&app->arena, 1280, 720, "Kerfuffle");
+    app->ip = input_sys_init(&app->arena);
+
+#if DEBUG
+    LOG_DEBUG("=== Memory Addresses ===");
+    // LOG_DEBUG("Filesystem: %p", app->fs);
+    LOG_DEBUG("Window:     %p", app->ws);
+    LOG_DEBUG("Input:      %p", app->ip);
+    // LOG_DEBUG("Camera:     %p", app->camera);
+    // LOG_DEBUG("Render:     %p", app->render);
+    // LOG_DEBUG("Mesh:       %p", app->mesh);
+
+    u64 used = arena_used(&app->arena);
+    u64 total = app->arena.total_size;
+    f32 usage_percent = (f32)used / (f32)total * 100.0f;
+    LOG_TRACE("Arena Usage: %lu/%lu bytes (%.1f%%)", used, total,
+              usage_percent);
+
+    if (usage_percent > 90.0f)
+    {
+        LOG_WARN("Arena nearly full! %.1f%% used", usage_percent);
+    }
+#endif
 
     LOG_INFO("Engine Initialize");
     return true;
@@ -14,18 +46,42 @@ b8 application_run(application_t *app)
     const f64 TARGET_FPS = 60.0;
     const f64 TARGET_FRAME_TIME = 1.0 / TARGET_FPS;
 
+    math_run_all_tests();
+    test_simd_vs_scalar();
+
     b8 cap_fps = false;
-    f64 fps_timer = 0.0f;
+    b8 benchmark_mode = false;
+    u32 benchmark_frames = 0;
+    const u32 MAX_BENCHMARK_FRAMES = 1000;
+
+    f64 fps_timer = 0.0;
     u32 fps_counter = 0;
+    f64 math_total_time = 0.0;
 
     timer_start(&app->time);
     f64 prev = timer_get();
+
+    LOG_INFO("%s", mem_debug_stat());
 
     while (!window_sys_close(app->ws))
     {
         f64 curr = timer_get();
         f64 delta = curr - prev;
         prev = curr;
+
+        // Math library benchmarking
+        if (benchmark_mode && benchmark_frames < MAX_BENCHMARK_FRAMES)
+        {
+            f64 math_start = timer_get();
+            // Benchmark critical math operations
+            math_benchmark bench;
+            benchmark_simd_vs_scalar(&bench);
+
+            f64 math_end = timer_get();
+            math_total_time += (math_end - math_start);
+
+            benchmark_frames++;
+        }
 
         fps_timer += delta;
         fps_counter++;
@@ -37,6 +93,15 @@ b8 application_run(application_t *app)
             f64 fps = fps_counter / fps_timer;
 
             LOG_INFO("FPS: %.0f | Frame: %.2f ms", fps, ms);
+
+            if (benchmark_mode && benchmark_frames >= MAX_BENCHMARK_FRAMES)
+            {
+                f64 avg_math_time =
+                    (math_total_time / benchmark_frames) * 1000.0;
+                LOG_INFO("Math ops: %.4f ms/frame (avg over %u frames)",
+                         avg_math_time, benchmark_frames);
+                benchmark_mode = false; // Stop after one report
+            }
 
             fps_counter = 0;
             fps_timer -= 1.0;
@@ -63,6 +128,9 @@ b8 application_run(application_t *app)
 
     input_sys_kill(app->ip);
     window_sys_kill(app->ws);
+
+    arena_kill(&app->arena);
+    memory_sys_kill();
 
     LOG_INFO("Engine Shutdown");
     return true;

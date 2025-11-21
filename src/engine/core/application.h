@@ -4,10 +4,14 @@
 #include "define.h" // IWYU pragma: keep
 
 #include "engine/core/clock.h"
+#include "engine/core/memory/arena.h"
 #include "engine/platform/window.h"
 #include "engine/platform/input.h"
 
+#include "engine/core/math/math_test.h"
+
 typedef struct {
+    arena_alloc_t arena;
     clock_timer_t time;
 
     window_system_t *ws;

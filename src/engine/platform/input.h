@@ -2,12 +2,14 @@
 #define INPUT_H
 
 #include "engine/core/define.h" // IWYU pragma: keep
+#include "engine/core/memory/arena.h"
 #include <GLFW/glfw3.h>
 
 #define MAX_KEYS (GLFW_KEY_LAST + 1)
 #define MAX_MOUSE_BUTTONS GLFW_MOUSE_BUTTON_LAST
 
 typedef struct {
+    arena_alloc_t *arena;
     b8 keys_curr[MAX_KEYS];
     b8 keys_prev[MAX_KEYS];
     int modifier;
@@ -20,7 +22,7 @@ typedef struct {
     b8 is_inside_window;
 } input_system_t;
 
-input_system_t *input_sys_init(void);
+input_system_t *input_sys_init(arena_alloc_t *arena);
 
 void input_sys_kill(input_system_t *ins);
 

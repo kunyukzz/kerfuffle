@@ -26,6 +26,7 @@ static struct status g_counter = {0};
 static mem_state *g_mem;
 static u64 g_mem_count = 0;
 static u64 g_mem_capacity = 0;
+static u64 g_mem_reserved = 0;
 
 static const char *tag_str[MEM_MAX_TAG] = {
     "MEM_UNKNOWN", "MEM_GAME",  "MEM_ARENA",    "MEM_RENDER",
@@ -58,6 +59,7 @@ b8 memory_sys_init(u64 total_size)
 
     g_mem_count = 0;
     g_counter = (struct status){0};
+    g_mem_reserved = total_size;
 
     LOG_INFO("Memory System Init");
     return true;
@@ -128,9 +130,14 @@ char *mem_debug_stat(void)
 
     static char buffer[BUFFER_SIZE];
     u64 offset = 0;
+
+    // Used vs Reserved
+    f32 used_mib = (f32)g_counter.total_allocated / (f32)Mib;
+    f32 reserved_mib = (f32)g_mem_reserved / (f32)Mib;
+
     offset += (u64)snprintf(buffer + offset, sizeof(buffer) - offset,
                             "Game Memory Used: %.2f Mib / %.2f Mib\n",
-                            (f32)g_mem->size, (f32)g_mem_capacity);
+                            used_mib, reserved_mib);
 
     for (u32 i = 0; i < MEM_MAX_TAG; ++i)
     {

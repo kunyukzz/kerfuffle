@@ -7,10 +7,10 @@ GAME_NAME = kerfuffle
 # Detect OS
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-	PLATFORM_LIBS = -lGL -lm -ldl -lrt -lX11 -lstdc++
+	PLATFORM_LIBS = -lGL -lm -ldl -lrt -lX11
 	GLFW_LIB = -lglfw
 else ifeq ($(OS),Windows_NT)
-	PLATFORM_LIBS = -lopengl32 -lm -luser32 -lgdi32 -lkernel32 -lstdc++
+	PLATFORM_LIBS = -lopengl32 -lm -luser32 -lgdi32 -lkernel32
 
 	# Auto-detect compiler type for GLFW
 	ifneq (,$(findstring clang,$(CC)))
@@ -25,7 +25,8 @@ else
 endif
 
 MODE ?= debug
-DEBUG_FLAGS = -g -MD
+# still testing sse
+DEBUG_FLAGS = -g -MD -msse -msse2 -march=native
 RELEASE_FLAGS = -O3
 
 ifeq ($(MODE),debug)
@@ -59,7 +60,7 @@ TARGET = bin/$(GAME_NAME)
 all: $(TARGET)
 
 # Build
-$(TARGET): $(OBJ) $(CIMGUI_BUILT)
+$(TARGET): $(OBJ)
 	@mkdir -p $(dir $@)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(OBJ) $(GLFW_LIB) $(PLATFORM_LIBS)
