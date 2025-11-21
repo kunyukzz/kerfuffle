@@ -23,6 +23,7 @@ b8 test_vectors(void);
 b8 test_matrices(void);
 b8 test_quaternions(void);
 b8 test_transforms(void);
+b8 test_matrices_dir(void);
 
 b8 expect_f32(f32 actual, f32 expected, f32 t, const char *test_name);
 b8 expect_vec3(vec3 actual, vec3 expected, f32 t, const char *test_name);

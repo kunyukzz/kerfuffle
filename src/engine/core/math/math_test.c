@@ -200,6 +200,30 @@ b8 test_transforms(void)
     return all_passed;
 }
 
+b8 test_matrices_dir(void)
+{
+    b8 all_passed = true;
+
+    // Test identity matrix directions
+    mat4 identity = mat4_identity();
+    all_passed &=
+        expect_vec3(mat4_forward(identity), vec3_create(0.0f, 0.0f, -1.0f),
+                    M_EPSILON, "mat4_forward identity");
+    all_passed &=
+        expect_vec3(mat4_right(identity), vec3_create(1.0f, 0.0f, 0.0f),
+                    M_EPSILON, "mat4_right identity");
+    all_passed &= expect_vec3(mat4_up(identity), vec3_create(0.0f, 1.0f, 0.0f),
+                              M_EPSILON, "mat4_up identity");
+
+    // Test rotated matrix
+    mat4 rotated = mat4_rotation_y(M_PI); // 180 degree rotation
+    all_passed &=
+        expect_vec3(mat4_forward(rotated), vec3_create(0.0f, 0.0f, 1.0f),
+                    0.001f, "mat4_forward rotated");
+
+    return all_passed;
+}
+
 void math_run_all_tests(void)
 {
     printf("\n=== RUN MATH LIBRARY TEST ===\n");
@@ -209,6 +233,7 @@ void math_run_all_tests(void)
     RUN_TEST(test_matrices);
     RUN_TEST(test_quaternions);
     RUN_TEST(test_transforms);
+    RUN_TEST(test_matrices_dir);
 
     printf("%s\n", all_passed ? "ALL PASSED" : "SOME FAILED");
 }

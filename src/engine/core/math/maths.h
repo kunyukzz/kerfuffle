@@ -437,6 +437,36 @@ INL mat4 mat4_zero(void)
     return m;
 }
 
+INL vec3 mat4_forward(mat4 m) {
+    // Forward is usually -Z axis (third column, negated)
+    return vec3_normalize(vec3_create(-m.data[8], -m.data[9], -m.data[10]));
+}
+
+INL vec3 mat4_backward(mat4 m) {
+    // Backward is +Z axis (third column)
+    return vec3_normalize(vec3_create(m.data[8], m.data[9], m.data[10]));
+}
+
+INL vec3 mat4_left(mat4 m) {
+    // Left is -X axis (first column, negated)
+    return vec3_normalize(vec3_create(-m.data[0], -m.data[1], -m.data[2]));
+}
+
+INL vec3 mat4_right(mat4 m) {
+    // Right is +X axis (first column)
+    return vec3_normalize(vec3_create(m.data[0], m.data[1], m.data[2]));
+}
+
+INL vec3 mat4_up(mat4 m) {
+    // Up is +Y axis (second column)
+    return vec3_normalize(vec3_create(m.data[4], m.data[5], m.data[6]));
+}
+
+INL vec3 mat4_down(mat4 m) {
+    // Down is -Y axis (second column, negated)
+    return vec3_normalize(vec3_create(-m.data[4], -m.data[5], -m.data[6]));
+}
+
 // Operations
 INL mat4 mat4_add(mat4 a, mat4 b)
 {
