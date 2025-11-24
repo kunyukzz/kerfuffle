@@ -122,7 +122,6 @@ static void cursor_enter_callback(GLFWwindow *window, int entered)
 // Input System
 input_system_t *input_sys_init(arena_alloc_t *arena)
 {
-    // TODO: use memory allocator
     input_system_t *ins = arena_alloc(arena, sizeof(input_system_t));
     if (!ins) return NULL;
     memset(ins, 0, sizeof(input_system_t));

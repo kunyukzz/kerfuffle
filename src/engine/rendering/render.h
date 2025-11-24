@@ -3,7 +3,7 @@
 
 #include "engine/core/define.h" // IWYU pragma: keep
 #include "engine/core/memory/arena.h"
-#include "engine/core/math/math_types.h"
+#include "engine/rendering/camera_system.h"
 
 typedef enum { WORLD_PASS = 0x01, DEBUG_UI_PASS = 0x02 } render_layer_t;
 
@@ -21,7 +21,14 @@ typedef struct {
 } render_mesh_t;
 
 typedef struct {
+    mat4 proj;
+    mat4 view;
+} render_ubo_t;
+
+typedef struct {
     arena_alloc_t *arena;
+    camera_system_t *cam;
+
     render_pass_t main_pass;
     // render_pass_t test_pass;
 
@@ -32,10 +39,17 @@ typedef struct {
     u32 test_fbo;
 
     render_mesh_t *rs_mesh;
-    f32 *vert;
-    u32 vert_count;
-    u32 *indcs;
-    u32 indcs_count;
+
+    u32 ubo_buffer;
+    render_ubo_t ubo;
+
+    // TODO: temp vertex data
+    void *vertices;
+    void *indices;
+    u32 vertices_count;
+    u32 vertices_size;
+    u32 indices_count;
+    u32 indices_size;
 } render_system_t;
 
 render_system_t *render_sys_init(arena_alloc_t *arena);
@@ -45,6 +59,8 @@ void render_sys_kill(render_system_t *rs);
 void render_sys_begin(render_system_t *rs, u8 id);
 
 void render_sys_end(render_system_t *rs, u8 id);
+
+void render_sys_update(render_system_t *rs, f64 delta);
 
 void render_draw(render_system_t *rs);
 

@@ -1,5 +1,6 @@
 #include "application.h"
 #include "engine/core/memory/memory.h"
+#include "engine/core/math/maths.h"
 
 b8 application_init(application_t *app)
 {
@@ -13,16 +14,26 @@ b8 application_init(application_t *app)
 
     arena_create(128 * 1024, &app->arena, NULL);
 
+    app->fs = file_system_init(&app->arena);
     app->ws = window_sys_init(&app->arena, 1280, 720, "Kerfuffle");
     app->ip = input_sys_init(&app->arena);
+    app->cs = camera_sys_init(&app->arena);
+    app->rs = render_sys_init(&app->arena);
+    app->sh = shader_sys_init(&app->arena);
+    app->game = game_init();
+
+    // TODO: temp
+    shader_sys_set(app->sh, "shaders/test");
+    // shader_sys_bind(app->sh);
 
 #if DEBUG
-    LOG_DEBUG("=== Memory Addresses ===");
-    // LOG_DEBUG("Filesystem: %p", app->fs);
+    LOG_DEBUG("--- Memory Addresses ---");
+    LOG_DEBUG("Filesystem: %p", app->fs);
     LOG_DEBUG("Window:     %p", app->ws);
     LOG_DEBUG("Input:      %p", app->ip);
-    // LOG_DEBUG("Camera:     %p", app->camera);
-    // LOG_DEBUG("Render:     %p", app->render);
+    LOG_DEBUG("Camera:     %p", app->cs);
+    LOG_DEBUG("Render:     %p", app->rs);
+    LOG_DEBUG("Shader:     %p", app->sh);
     // LOG_DEBUG("Mesh:       %p", app->mesh);
 
     u64 used = arena_used(&app->arena);
@@ -46,8 +57,8 @@ b8 application_run(application_t *app)
     const f64 TARGET_FPS = 60.0;
     const f64 TARGET_FRAME_TIME = 1.0 / TARGET_FPS;
 
-    math_run_all_tests();
-    test_simd_vs_scalar();
+    // math_run_all_tests();
+    // test_simd_vs_scalar();
 
     b8 cap_fps = false;
     b8 benchmark_mode = false;
@@ -69,11 +80,10 @@ b8 application_run(application_t *app)
         f64 delta = curr - prev;
         prev = curr;
 
-        // Math library benchmarking
+        /*
         if (benchmark_mode && benchmark_frames < MAX_BENCHMARK_FRAMES)
         {
             f64 math_start = timer_get();
-            // Benchmark critical math operations
             math_benchmark bench;
             benchmark_simd_vs_scalar(&bench);
 
@@ -82,6 +92,7 @@ b8 application_run(application_t *app)
 
             benchmark_frames++;
         }
+        */
 
         fps_timer += delta;
         fps_counter++;
@@ -94,14 +105,16 @@ b8 application_run(application_t *app)
 
             LOG_INFO("FPS: %.0f | Frame: %.2f ms", fps, ms);
 
+            /*
             if (benchmark_mode && benchmark_frames >= MAX_BENCHMARK_FRAMES)
             {
                 f64 avg_math_time =
                     (math_total_time / benchmark_frames) * 1000.0;
                 LOG_INFO("Math ops: %.4f ms/frame (avg over %u frames)",
                          avg_math_time, benchmark_frames);
-                benchmark_mode = false; // Stop after one report
+                benchmark_mode = false;
             }
+            */
 
             fps_counter = 0;
             fps_timer -= 1.0;
@@ -109,6 +122,20 @@ b8 application_run(application_t *app)
 
         window_sys_poll(app->ws);
         input_sys_update(app->ip, delta);
+
+        game_update(app->game, delta);
+        game_render(app->game, delta);
+        camera_update(app->cs);
+
+        shader_sys_bind(app->sh);
+        render_sys_begin(app->rs, WORLD_PASS);
+
+        // TODO: temp code
+        shader_sys_set_uniform_mat4(app->sh, mat4_identity());
+
+        render_draw(app->rs);
+
+        render_sys_end(app->rs, WORLD_PASS);
 
         window_sys_swapbuffer(app->ws);
 
@@ -126,8 +153,14 @@ b8 application_run(application_t *app)
         }
     }
 
+    game_kill(app->game);
+
+    shader_sys_kill(app->sh);
+    render_sys_kill(app->rs);
+    camera_sys_kill(app->cs);
     input_sys_kill(app->ip);
     window_sys_kill(app->ws);
+    file_system_kill(app->fs);
 
     arena_kill(&app->arena);
     memory_sys_kill();

@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 typedef struct {
+    arena_alloc_t *arena;
     GLFWwindow *handle;
     int width, height;
     const char *title;
@@ -23,7 +24,7 @@ void window_sys_poll(window_system_t *ws);
 
 void window_sys_swapbuffer(window_system_t *ws);
 
-void window_sys_get_size(int width, int height);
+void window_sys_get_size(int *width, int *height);
 
 GLFWwindow *window_sys_get_handle(void);
 

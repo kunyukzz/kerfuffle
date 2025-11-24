@@ -3,6 +3,7 @@
 
 #include "math_types.h"
 #include <math.h>
+#include <stdio.h>
 
 #define M_PI 3.14159265358979323846f
 #define M_SQRT_2 1.41421356237309504880f
@@ -387,7 +388,11 @@ INL b8 vec4_is_zero(vec4 v)
  * MATRIX
  *************************/
 // Declaration (implement in maths.c)
+
+// BUG: Please dont use this, still have a bug!!
+// use mat4_inverse_rigid instead.
 mat4 mat4_inverse(mat4 m);
+
 mat4 mat4_look_at(vec3 eye, vec3 target, vec3 up);
 mat4 mat4_perspective(f32 fov, f32 aspect, f32 near, f32 far);
 mat4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 near,
@@ -395,28 +400,17 @@ mat4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 near,
 
 // clang-format off
 // Constructor
-INL mat4 mat4_create(f32 m00, f32 m01, f32 m02, f32 m03, f32 m10, f32 m11,
-                     f32 m12, f32 m13, f32 m20, f32 m21, f32 m22, f32 m23,
+INL mat4 mat4_create(f32 m00, f32 m01, f32 m02, f32 m03, 
+                     f32 m10, f32 m11, f32 m12, f32 m13,
+                     f32 m20, f32 m21, f32 m22, f32 m23,
                      f32 m30, f32 m31, f32 m32, f32 m33)
 {
     mat4 m;
-    // Column-major: data[col * 4 + row]
-    m.data[0] = m00;
-    m.data[4] = m01;
-    m.data[8] = m02;
-    m.data[12] = m03;
-    m.data[1] = m10;
-    m.data[5] = m11;
-    m.data[9] = m12;
-    m.data[13] = m13;
-    m.data[2] = m20;
-    m.data[6] = m21;
-    m.data[10] = m22;
-    m.data[14] = m23;
-    m.data[3] = m30;
-    m.data[7] = m31;
-    m.data[11] = m32;
-    m.data[15] = m33;
+    // Row-major storage: data[row * 4 + col]
+    m.data[0] = m00; m.data[1] = m01; m.data[2] = m02; m.data[3] = m03;   // Row 0
+    m.data[4] = m10; m.data[5] = m11; m.data[6] = m12; m.data[7] = m13;   // Row 1  
+    m.data[8] = m20; m.data[9] = m21; m.data[10] = m22; m.data[11] = m23; // Row 2
+    m.data[12] = m30; m.data[13] = m31; m.data[14] = m32; m.data[15] = m33; // Row 3
     return m;
 }
 
@@ -493,30 +487,27 @@ INL mat4 mat4_scale(mat4 m, f32 scalar)
 INL mat4 mat4_mul(mat4 m1, mat4 m2)
 {
     mat4 result = mat4_zero();
-    for (u32 col = 0; col < 4; col++) {
-        for (u32 row = 0; row < 4; row++) {
-            f32 sum = 0.0f;
-            for (u32 k = 0; k < 4; k++) {
-                sum += m1.data[k * 4 + row] * m2.data[col * 4 + k];
-            }
-            result.data[col * 4 + row] = sum;
+
+    for (u32 row = 0; row < 4; row++) {
+        for (u32 col = 0; col < 4; col++) {
+			result.data[row * 4 + col] = 
+		 		m1.data[row * 4 + 0] * m2.data[0 * 4 + col] +
+		 		m1.data[row * 4 + 1] * m2.data[1 * 4 + col] +
+		 		m1.data[row * 4 + 2] * m2.data[2 * 4 + col] +
+		 		m1.data[row * 4 + 3] * m2.data[3 * 4 + col];
         }
     }
     return result;
 }
 
 // Vector transformation
-INL vec4 mat4_mul_vec4(mat4 m, vec4 v)
-{
-    vec4 result;
-    for (u32 row = 0; row < 4; row++) {
-        result.elements[row] = 
-            m.data[0 * 4 + row] * v.x +
-            m.data[1 * 4 + row] * v.y + 
-            m.data[2 * 4 + row] * v.z +
-            m.data[3 * 4 + row] * v.w;
-    }
-    return result;
+INL vec4 mat4_mul_vec4(mat4 m, vec4 v) {
+    return (vec4){{
+        m.m0 * v.x + m.m4 * v.y + m.m8 * v.z + m.m12 * v.w,
+        m.m1 * v.x + m.m5 * v.y + m.m9 * v.z + m.m13 * v.w,
+        m.m2 * v.x + m.m6 * v.y + m.m10 * v.z + m.m14 * v.w,
+        m.m3 * v.x + m.m7 * v.y + m.m11 * v.z + m.m15 * v.w
+	}};
 }
 
 INL vec3 mat4_mul_vec3(mat4 m, vec3 v)
@@ -602,18 +593,36 @@ INL mat4 mat4_rotation_xyz(vec3 angles)
     f32 cz = m_cos(angles.z);
     f32 sz = m_sin(angles.z);
 
-    // Combined rotation matrix: Rz * Ry * Rx
-    return mat4_create(
-        cy * cz,     cz * sx * sy - cx * sz,    cx * cz * sy + sx * sz,    0.0f,
-        cy * sz,     cx * cz + sx * sy * sz,    cx * sy * sz - cz * sx,    0.0f,
-        -sy,         cy * sx,                   cx * cy,                   0.0f,
-        0.0f,        0.0f,                      0.0f,                      1.0f
+	return mat4_create(
+        cy * cz,  cz * sx * sy - cx * sz,	cx * cz * sy + sx * sz,	0.0f,  // Row 0
+        cy * sz,  cx * cz + sx * sy * sz,	cx * sy * sz - cz * sx, 0.0f,  // Row 1
+        -sy,      cy * sx,                  cx * cy,                0.0f,  // Row 2
+        0.0f,     0.0f,                     0.0f,                   1.0f   // Row 3
     );
 }
 
 INL mat4 mat4_rotation_xyz_angles(f32 x_rad, f32 y_rad, f32 z_rad)
 {
     return mat4_rotation_xyz(vec3_create(x_rad, y_rad, z_rad));
+}
+
+INL mat4 mat4_inverse_rigid(mat4 m) {
+	mat4 result = {0};
+    
+    result.m0 = m.m0; result.m1 = m.m4; result.m2 = m.m8;
+    result.m4 = m.m1; result.m5 = m.m5; result.m6 = m.m9; 
+    result.m8 = m.m2; result.m9 = m.m6; result.m10 = m.m10;
+
+    // Inverse translation: -Rᵀ * T
+    float tx = m.m12, ty = m.m13, tz = m.m14;
+    result.m12 = -(result.m0 * tx + result.m4 * ty + result.m8 * tz);
+    result.m13 = -(result.m1 * tx + result.m5 * ty + result.m9 * tz);
+    result.m14 = -(result.m2 * tx + result.m6 * ty + result.m10 * tz);
+    
+    result.m15 = 1.0f;
+
+
+	return result;
 }
 
 /*************************

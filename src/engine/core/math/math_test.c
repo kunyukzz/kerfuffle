@@ -224,6 +224,26 @@ b8 test_matrices_dir(void)
     return all_passed;
 }
 
+b8 test_matrix_inverse(void)
+{
+    b8 all_passed = true;
+
+    // Test identity matrix
+    mat4 identity = mat4_identity();
+    mat4 inv_identity = mat4_inverse(identity);
+    all_passed &=
+        expect_mat4(inv_identity, identity, M_EPSILON, "inverse(identity)");
+
+    // Test simple translation
+    mat4 translation = mat4_translation(vec3_create(1.0f, 2.0f, 3.0f));
+    mat4 inv_translation = mat4_inverse(translation);
+    mat4 should_be = mat4_translation(vec3_create(-1.0f, -2.0f, -3.0f));
+    all_passed &= expect_mat4(inv_translation, should_be, 0.001f,
+                              "inverse(translation)");
+
+    return all_passed;
+}
+
 void math_run_all_tests(void)
 {
     printf("\n=== RUN MATH LIBRARY TEST ===\n");
@@ -234,6 +254,7 @@ void math_run_all_tests(void)
     RUN_TEST(test_quaternions);
     RUN_TEST(test_transforms);
     RUN_TEST(test_matrices_dir);
+    RUN_TEST(test_matrix_inverse);
 
     printf("%s\n", all_passed ? "ALL PASSED" : "SOME FAILED");
 }

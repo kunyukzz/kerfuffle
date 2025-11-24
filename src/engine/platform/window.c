@@ -19,6 +19,7 @@ window_system_t *window_sys_init(arena_alloc_t *arena, int width, int height,
     if (!ws) return NULL;
     memset(ws, 0, sizeof(window_system_t));
 
+    ws->arena = arena;
     ws->width = width;
     ws->height = height;
     ws->title = title;
@@ -34,7 +35,7 @@ window_system_t *window_sys_init(arena_alloc_t *arena, int width, int height,
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
 
     // hide window first, because window need to move to center of monitor
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    // glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     ws->handle = glfwCreateWindow(width, height, title, NULL, NULL);
     if (!ws)
@@ -96,9 +97,9 @@ void window_sys_swapbuffer(window_system_t *ws)
     glfwSwapBuffers(ws->handle);
 }
 
-void window_sys_get_size(int width, int height)
+void window_sys_get_size(int *width, int *height)
 {
-    glfwGetWindowSize(g_ws->handle, &width, &height);
+    glfwGetWindowSize(g_ws->handle, width, height);
 }
 
 GLFWwindow *window_sys_get_handle(void) { return g_ws->handle; }

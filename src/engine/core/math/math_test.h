@@ -5,12 +5,12 @@
 
 typedef struct math_benchmark {
     f64 matrix_mul_time;
-    f64 matrix_simd_time;   // New
-    f64 matrix_scalar_time; // New
+    f64 matrix_simd_time;
+    f64 matrix_scalar_time;
     f64 vector_ops_time;
     f64 transform_time;
-    f64 transform_simd_time;   // New
-    f64 transform_scalar_time; // New
+    f64 transform_simd_time;
+    f64 transform_scalar_time;
     u32 iterations;
 } math_benchmark;
 
@@ -24,6 +24,7 @@ b8 test_matrices(void);
 b8 test_quaternions(void);
 b8 test_transforms(void);
 b8 test_matrices_dir(void);
+b8 test_matrix_inverse(void);
 
 b8 expect_f32(f32 actual, f32 expected, f32 t, const char *test_name);
 b8 expect_vec3(vec3 actual, vec3 expected, f32 t, const char *test_name);

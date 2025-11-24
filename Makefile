@@ -26,7 +26,7 @@ endif
 
 MODE ?= debug
 # still testing sse
-DEBUG_FLAGS = -g -MD -msse -msse2 -march=native
+DEBUG_FLAGS = -g -MD
 RELEASE_FLAGS = -O3
 
 ifeq ($(MODE),debug)

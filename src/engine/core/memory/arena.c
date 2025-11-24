@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#define DEFAULT_ALIGNMENT 0x08
+#define DEFAULT_ALIGNMENT 0x10
 
 b8 arena_create(u64 total_size, arena_alloc_t *arena, void *memory)
 {

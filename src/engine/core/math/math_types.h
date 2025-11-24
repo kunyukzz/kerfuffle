@@ -38,10 +38,6 @@ typedef union VEC3
         f32 u, v, t;
     };
     f32 elements[3];
-
-#ifdef __SSE__
-    __m128 simd;
-#endif
 } ALIGN(16) vec3;
 
 typedef union VEC4
@@ -56,33 +52,20 @@ typedef union VEC4
         f32 u, v, t, s;
     };
     f32 elements[4];
-
-#ifdef __SSE__
-    __m128 simd;
-#endif
 } ALIGN(16) vec4;
 
-// Matrix types (use Colum-major)
 typedef union MAT4
 {
-    // data[col * 4 + row]
     f32 data[16];
-
-    // Column vectors
     vec4 columns[4];
 
-    // Element access: m[col][row]
     struct {
-        f32 m00, m10, m20, m30;
-        f32 m01, m11, m21, m31;
-        f32 m02, m12, m22, m32;
-        f32 m03, m13, m23, m33;
+        f32 m0, m1, m2, m3;
+        f32 m4, m5, m6, m7;
+        f32 m8, m9, m10, m11;
+        f32 m12, m13, m14, m15;
     };
-
-#ifdef __SSE__
-    __m128 simd[4];
-#endif
-} ALIGN(32) mat4;
+} ALIGN(16) mat4;
 
 typedef union QUAT
 {

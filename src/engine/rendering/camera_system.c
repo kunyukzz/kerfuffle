@@ -5,8 +5,10 @@
 // std
 #include <string.h>
 
+/*
 static void recalculate_matrix(camera_t *cam)
 {
+    if (!cam) return;
     mat4 tr = mat4_translation(cam->position);
     mat4 ro = mat4_rotation_xyz_angles(cam->rotation.x, cam->rotation.y,
                                        cam->rotation.z);
@@ -19,12 +21,53 @@ static void recalculate_matrix(camera_t *cam)
 
 static void update_proj_pers(camera_t *cam, f32 aspect_ratio)
 {
+    if (!cam) return;
+
     cam->aspect_ratio = aspect_ratio;
     cam->proj = mat4_perspective(m_deg_to_rad(cam->fov), aspect_ratio,
                                  cam->near, cam->far);
 
     cam->view = mat4_identity();
-    cam->view = mat4_inverse(cam->view);
+    // cam->view = mat4_inverse(cam->view);
+}
+*/
+
+void debug_fixed_union()
+{
+    mat4 test = {0};
+
+    printf("Fixed union test:\n");
+    printf("data[12] offset = %ld, m12 offset = %ld\n",
+           (char *)&test.data[12] - (char *)&test,
+           (char *)&test.m12 - (char *)&test);
+    printf("data[14] offset = %ld, m14 offset = %ld\n",
+           (char *)&test.data[14] - (char *)&test,
+           (char *)&test.m14 - (char *)&test);
+
+    test.data[14] = 50.0f;
+    printf("After data[14]=50: m14=%f\n", test.m14);
+
+    test.m14 = 100.0f;
+    printf("After m14=100: data[14]=%f\n", test.data[14]);
+}
+static void recalculate_matrix(camera_t *cam)
+{
+    if (!cam) return;
+
+    mat4 rotation = mat4_rotation_xyz(cam->rotation);
+    mat4 translation = mat4_translation(cam->position);
+    mat4 view = mat4_mul(translation, rotation);
+
+    cam->view = mat4_inverse_rigid(view);
+    cam->dirty = false;
+}
+
+static void update_proj_pers(camera_t *cam, f32 aspect_ratio)
+{
+    if (!cam) return;
+
+    cam->proj = mat4_perspective(cam->fov, aspect_ratio, cam->near, cam->far);
+    cam->aspect_ratio = aspect_ratio;
 }
 
 /*
@@ -42,17 +85,23 @@ static camera_system_t *g_cs = NULL;
 camera_system_t *camera_sys_init(arena_alloc_t *arena)
 {
     camera_system_t *cs = arena_alloc(arena, sizeof(camera_system_t));
-    if (!cs) return NULL;
+    if (!cs)
+    {
+        LOG_ERROR("arena_alloc returned NULL!");
+        return NULL;
+    }
     memset(cs, 0, sizeof(camera_system_t));
 
     cs->arena = arena;
     cs->world.near = 0.1f;
-    cs->world.far = 1000.0f;
+    cs->world.far = 100.0f;
     cs->world.fov = 45.0f;
-    cs->world.position = (vec3){{0.0f, 0.0f, 30.0f}};
-    cs->world.rotation = (vec3){{m_deg_to_rad(-30.0f), 0.0f, 0.0f}};
+    cs->world.position = (vec3){{0.0f, 0.0f, 3.0f}};
+    cs->world.rotation = vec3_zero();
     cs->world.proj_type = CAMERA_PROJECTION_PERSPECTIVE;
     cs->world.dirty = true;
+
+    debug_fixed_union();
 
     g_cs = cs;
     LOG_INFO("Camera System Init");
@@ -70,7 +119,7 @@ void camera_sys_kill(camera_system_t *cs)
 void camera_update(camera_system_t *cs)
 {
     int width, height;
-    window_sys_get_size(width, height);
+    window_sys_get_size(&width, &height);
     f32 aspect_ratio = (f32)width / (f32)height;
 
     if (cs->world.dirty || cs->world.aspect_ratio != aspect_ratio)
@@ -78,15 +127,6 @@ void camera_update(camera_system_t *cs)
         update_proj_pers(&cs->world, aspect_ratio);
         recalculate_matrix(&cs->world);
     }
-
-    /*
-    if (cam->ui.dirty)
-    {
-        update_proj_ortho(&cam->ui, 0, (f32)width, (f32)height, 0);
-        cam->ui.view = mat4_identity();
-        cam->ui.dirty = false;
-    }
-    */
 }
 
 camera_system_t *get_camera_system(void) { return g_cs; }
