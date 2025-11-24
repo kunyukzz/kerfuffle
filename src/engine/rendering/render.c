@@ -25,18 +25,18 @@ static GLuint compile_shader(GLenum type, const char *src)
     return shader;
 }
 
-static void init_mesh(render_system_t *rs)
+static void init_mesh(render_system_t *rs, render_mesh_t *mesh)
 {
-    glGenVertexArrays(1, &rs->rs_mesh->vao);
-    glBindVertexArray(rs->rs_mesh->vao);
+    glGenVertexArrays(1, &mesh->vao);
+    glBindVertexArray(mesh->vao);
 
-    glGenBuffers(1, &rs->rs_mesh->vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, rs->rs_mesh->vbo);
+    glGenBuffers(1, &mesh->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
     glBufferData(GL_ARRAY_BUFFER, rs->vertices_size, rs->vertices,
                  GL_STATIC_DRAW);
 
-    glGenBuffers(1, &rs->rs_mesh->ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rs->rs_mesh->ebo);
+    glGenBuffers(1, &mesh->ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, rs->indices_size, rs->indices,
                  GL_STATIC_DRAW);
 
@@ -78,33 +78,137 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glViewport(0, 0, 1280, 720);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
     glDepthFunc(GL_LESS);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    vertex *vert = ALLOC(sizeof(vertex) * 4, MEM_ARRAY);
-    vert[0].position = (vec3){{-0.5f, 0.5f, 0.0f}};  // tl
-    vert[1].position = (vec3){{0.5f, 0.5f, 0.0f}};   // tr
-    vert[2].position = (vec3){{-0.5f, -0.5f, 0.0f}}; // bl
-    vert[3].position = (vec3){{0.5f, -0.5f, 0.0f}};  // br
+    // TODO: Temporary code start
+    vertex *vert = ALLOC(sizeof(vertex) * 24, MEM_ARRAY);
 
-    u32 *indcs = ALLOC(sizeof(u32) * 6, MEM_ARRAY);
-    // first
-    indcs[0] = 0;
-    indcs[1] = 2;
-    indcs[2] = 3;
+    vec3 normal_front = (vec3){{0.0f, 0.0f, 1.0f}};
+    vec3 normal_back = (vec3){{0.0f, 0.0f, -1.0f}};
+    vec3 normal_right = (vec3){{1.0f, 0.0f, 0.0f}};
+    vec3 normal_left = (vec3){{-1.0f, 0.0f, 0.0f}};
+    vec3 normal_top = (vec3){{0.0f, 1.0f, 0.0f}};
+    vec3 normal_bottom = (vec3){{0.0f, -1.0f, 0.0f}};
 
-    // second
-    indcs[3] = 0;
-    indcs[4] = 3;
-    indcs[5] = 1;
+    vec2 uv_10 = (vec2){{1.0f, 0.0f}};
+    vec2 uv_11 = (vec2){{1.0f, 1.0f}};
+    vec2 uv_00 = (vec2){{0.0f, 0.0f}};
+    vec2 uv_01 = (vec2){{0.0f, 1.0f}};
+
+    // front
+    vert[0] = (vertex){.position = (vec3){{-0.5f, 0.5f, 0.5f}},
+                       .normal = normal_front,
+                       .texcoord = uv_01};
+    vert[1] = (vertex){.position = (vec3){{0.5f, 0.5f, 0.5f}},
+                       .normal = normal_front,
+                       .texcoord = uv_11};
+    vert[2] = (vertex){.position = (vec3){{-0.5f, -0.5f, 0.5f}},
+                       .normal = normal_front,
+                       .texcoord = uv_00};
+    vert[3] = (vertex){.position = (vec3){{0.5f, -0.5f, 0.5f}},
+                       .normal = normal_front,
+                       .texcoord = uv_10};
+    // back
+    vert[4] = (vertex){.position = (vec3){{-0.5f, 0.5f, -0.5f}},
+                       .normal = normal_back,
+                       .texcoord = uv_11};
+    vert[5] = (vertex){.position = (vec3){{0.5f, 0.5f, -0.5f}},
+                       .normal = normal_back,
+                       .texcoord = uv_01};
+    vert[6] = (vertex){.position = (vec3){{-0.5f, -0.5f, -0.5f}},
+                       .normal = normal_back,
+                       .texcoord = uv_10};
+    vert[7] = (vertex){.position = (vec3){{0.5f, -0.5f, -0.5f}},
+                       .normal = normal_back,
+                       .texcoord = uv_00};
+    // right
+    vert[8] = (vertex){.position = (vec3){{0.5f, 0.5f, 0.5f}},
+                       .normal = normal_right,
+                       .texcoord = uv_01};
+    vert[9] = (vertex){.position = (vec3){{0.5f, 0.5f, -0.5f}},
+                       .normal = normal_right,
+                       .texcoord = uv_11};
+    vert[10] = (vertex){.position = (vec3){{0.5f, -0.5f, 0.5f}},
+                        .normal = normal_right,
+                        .texcoord = uv_00};
+    vert[11] = (vertex){.position = (vec3){{0.5f, -0.5f, -0.5f}},
+                        .normal = normal_right,
+                        .texcoord = uv_10};
+    // left
+    vert[12] = (vertex){.position = (vec3){{-0.5f, 0.5f, 0.5f}},
+                        .normal = normal_left,
+                        .texcoord = uv_11};
+    vert[13] = (vertex){.position = (vec3){{-0.5f, 0.5f, -0.5f}},
+                        .normal = normal_left,
+                        .texcoord = uv_01};
+    vert[14] = (vertex){.position = (vec3){{-0.5f, -0.5f, 0.5f}},
+                        .normal = normal_left,
+                        .texcoord = uv_10};
+    vert[15] = (vertex){.position = (vec3){{-0.5f, -0.5f, -0.5f}},
+                        .normal = normal_left,
+                        .texcoord = uv_00};
+    // top
+    vert[16] = (vertex){.position = (vec3){{-0.5f, 0.5f, -0.5f}},
+                        .normal = normal_top,
+                        .texcoord = uv_01};
+    vert[17] = (vertex){.position = (vec3){{0.5f, 0.5f, -0.5f}},
+                        .normal = normal_top,
+                        .texcoord = uv_11};
+    vert[18] = (vertex){.position = (vec3){{-0.5f, 0.5f, 0.5f}},
+                        .normal = normal_top,
+                        .texcoord = uv_00};
+    vert[19] = (vertex){.position = (vec3){{0.5f, 0.5f, 0.5f}},
+                        .normal = normal_top,
+                        .texcoord = uv_10};
+    // bottom
+    vert[20] = (vertex){.position = (vec3){{-0.5f, -0.5f, -0.5f}},
+                        .normal = normal_bottom,
+                        .texcoord = uv_01};
+    vert[21] = (vertex){.position = (vec3){{0.5f, -0.5f, -0.5f}},
+                        .normal = normal_bottom,
+                        .texcoord = uv_11};
+    vert[22] = (vertex){.position = (vec3){{-0.5f, -0.5f, 0.5f}},
+                        .normal = normal_bottom,
+                        .texcoord = uv_00};
+    vert[23] = (vertex){.position = (vec3){{0.5f, -0.5f, 0.5f}},
+                        .normal = normal_bottom,
+                        .texcoord = uv_10};
+
+    // clang-format off
+    u32 *indcs = ALLOC(sizeof(u32) * 36, MEM_ARRAY);
+    // front
+    indcs[0] = 0; indcs[1] = 2; indcs[2] = 3; // first
+    indcs[3] = 0; indcs[4] = 3; indcs[5] = 1; // second
+    // back
+    indcs[6] = 4; indcs[7] = 7; indcs[8] = 6; // first
+    indcs[9] = 4; indcs[10] = 5; indcs[11] = 7; // second
+    // right 
+    indcs[12] = 8; indcs[13] = 10; indcs[14] = 11; // first
+    indcs[15] = 8; indcs[16] = 11; indcs[17] = 9; // second
+    // left 
+    indcs[18] = 12; indcs[19] = 15; indcs[20] = 14; // first
+    indcs[21] = 12; indcs[22] = 13; indcs[23] = 15; // second
+    // top
+    indcs[24] = 16; indcs[25] = 18; indcs[26] = 19; // first
+    indcs[27] = 16; indcs[28] = 19; indcs[29] = 17; // second
+    // bottom
+    indcs[30] = 20; indcs[31] = 23; indcs[32] = 22; // first
+    indcs[33] = 20; indcs[34] = 21; indcs[35] = 23; // second
+    // clang-format on
 
     rs->vertices = vert;
-    rs->vertices_count = 4;
+    rs->vertices_count = 24;
     rs->vertices_size = rs->vertices_count * sizeof(vertex);
     rs->indices = indcs;
-    rs->indices_count = 6;
+    rs->indices_count = 36;
     rs->indices_size = rs->indices_count * sizeof(u32);
 
-    init_mesh(rs);
+    init_mesh(rs, rs->rs_mesh);
+    // TODO: Temporary code end
 
     // world
     glGenBuffers(1, &rs->ubo_buffer);

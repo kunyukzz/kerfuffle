@@ -59,11 +59,20 @@ typedef union MAT4
     f32 data[16];
     vec4 columns[4];
 
+    /*
     struct {
         f32 m0, m1, m2, m3;
         f32 m4, m5, m6, m7;
         f32 m8, m9, m10, m11;
         f32 m12, m13, m14, m15;
+    };
+    */
+
+    struct {
+        f32 m00, m10, m20, m30;
+        f32 m01, m11, m21, m31;
+        f32 m02, m12, m22, m32;
+        f32 m03, m13, m23, m33;
     };
 } ALIGN(16) mat4;
 

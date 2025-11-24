@@ -6,12 +6,15 @@
 #include "engine/core/math/math_types.h"
 
 typedef struct {
-    arena_alloc_t *arena;
     u32 program;
-
     i32 model;
     i32 view;
     i32 proj;
+} shader_t;
+
+typedef struct {
+    arena_alloc_t *arena;
+    shader_t object_shader;
 } shader_system_t;
 
 shader_system_t *shader_sys_init(arena_alloc_t *arena);

@@ -39,6 +39,7 @@ typedef struct {
     u32 test_fbo;
 
     render_mesh_t *rs_mesh;
+    render_mesh_t *rs_light;
 
     u32 ubo_buffer;
     render_ubo_t ubo;

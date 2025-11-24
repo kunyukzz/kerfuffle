@@ -400,17 +400,31 @@ mat4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 near,
 
 // clang-format off
 // Constructor
+/*
 INL mat4 mat4_create(f32 m00, f32 m01, f32 m02, f32 m03, 
                      f32 m10, f32 m11, f32 m12, f32 m13,
                      f32 m20, f32 m21, f32 m22, f32 m23,
                      f32 m30, f32 m31, f32 m32, f32 m33)
 {
     mat4 m;
-    // Row-major storage: data[row * 4 + col]
-    m.data[0] = m00; m.data[1] = m01; m.data[2] = m02; m.data[3] = m03;   // Row 0
-    m.data[4] = m10; m.data[5] = m11; m.data[6] = m12; m.data[7] = m13;   // Row 1  
-    m.data[8] = m20; m.data[9] = m21; m.data[10] = m22; m.data[11] = m23; // Row 2
-    m.data[12] = m30; m.data[13] = m31; m.data[14] = m32; m.data[15] = m33; // Row 3
+    m.data[0] = m00; m.data[1] = m01; m.data[2] = m02; m.data[3] = m03;
+    m.data[4] = m10; m.data[5] = m11; m.data[6] = m12; m.data[7] = m13;
+    m.data[8] = m20; m.data[9] = m21; m.data[10] = m22; m.data[11] = m23;
+    m.data[12] = m30; m.data[13] = m31; m.data[14] = m32; m.data[15] = m33;
+    return m;
+}
+*/
+
+INL mat4 mat4_create(f32 m00, f32 m10, f32 m20, f32 m30,  // Column 0
+                     f32 m01, f32 m11, f32 m21, f32 m31,  // Column 1
+                     f32 m02, f32 m12, f32 m22, f32 m32,  // Column 2  
+                     f32 m03, f32 m13, f32 m23, f32 m33)  // Column 3
+{
+    mat4 m;
+    m.m00 = m00; m.m10 = m10; m.m20 = m20; m.m30 = m30;
+    m.m01 = m01; m.m11 = m11; m.m21 = m21; m.m31 = m31;
+    m.m02 = m02; m.m12 = m12; m.m22 = m22; m.m32 = m32;
+    m.m03 = m03; m.m13 = m13; m.m23 = m23; m.m33 = m33;
     return m;
 }
 
@@ -432,32 +446,26 @@ INL mat4 mat4_zero(void)
 }
 
 INL vec3 mat4_forward(mat4 m) {
-    // Forward is usually -Z axis (third column, negated)
     return vec3_normalize(vec3_create(-m.data[8], -m.data[9], -m.data[10]));
 }
 
 INL vec3 mat4_backward(mat4 m) {
-    // Backward is +Z axis (third column)
     return vec3_normalize(vec3_create(m.data[8], m.data[9], m.data[10]));
 }
 
 INL vec3 mat4_left(mat4 m) {
-    // Left is -X axis (first column, negated)
     return vec3_normalize(vec3_create(-m.data[0], -m.data[1], -m.data[2]));
 }
 
 INL vec3 mat4_right(mat4 m) {
-    // Right is +X axis (first column)
     return vec3_normalize(vec3_create(m.data[0], m.data[1], m.data[2]));
 }
 
 INL vec3 mat4_up(mat4 m) {
-    // Up is +Y axis (second column)
     return vec3_normalize(vec3_create(m.data[4], m.data[5], m.data[6]));
 }
 
 INL vec3 mat4_down(mat4 m) {
-    // Down is -Y axis (second column, negated)
     return vec3_normalize(vec3_create(-m.data[4], -m.data[5], -m.data[6]));
 }
 
@@ -501,6 +509,7 @@ INL mat4 mat4_mul(mat4 m1, mat4 m2)
 }
 
 // Vector transformation
+/*
 INL vec4 mat4_mul_vec4(mat4 m, vec4 v) {
     return (vec4){{
         m.m0 * v.x + m.m4 * v.y + m.m8 * v.z + m.m12 * v.w,
@@ -508,6 +517,16 @@ INL vec4 mat4_mul_vec4(mat4 m, vec4 v) {
         m.m2 * v.x + m.m6 * v.y + m.m10 * v.z + m.m14 * v.w,
         m.m3 * v.x + m.m7 * v.y + m.m11 * v.z + m.m15 * v.w
 	}};
+}
+*/
+
+INL vec4 mat4_mul_vec4(mat4 m, vec4 v) {
+    return (vec4){{
+        m.m00 * v.x + m.m01 * v.y + m.m02 * v.z + m.m03 * v.w,  // Col 0 dot
+        m.m10 * v.x + m.m11 * v.y + m.m12 * v.z + m.m13 * v.w,  // Col 1 dot
+        m.m20 * v.x + m.m21 * v.y + m.m22 * v.z + m.m23 * v.w,  // Col 2 dot
+        m.m30 * v.x + m.m31 * v.y + m.m32 * v.z + m.m33 * v.w   // Col 3 dot
+    }};
 }
 
 INL vec3 mat4_mul_vec3(mat4 m, vec3 v)
@@ -518,6 +537,7 @@ INL vec3 mat4_mul_vec3(mat4 m, vec3 v)
 }
 
 // Transpose
+/*
 INL mat4 mat4_transpose(mat4 m)
 {
     return mat4_create(
@@ -527,14 +547,25 @@ INL mat4 mat4_transpose(mat4 m)
         m.data[12], m.data[13], m.data[14], m.data[15]
     );
 }
+*/
+
+INL mat4 mat4_transpose(mat4 m)
+{
+    return mat4_create(
+        m.m00, m.m01, m.m02, m.m03,  // Row 0 becomes Column 0
+        m.m10, m.m11, m.m12, m.m13,  // Row 1 becomes Column 1
+        m.m20, m.m21, m.m22, m.m23,  // Row 2 becomes Column 2
+        m.m30, m.m31, m.m32, m.m33   // Row 3 becomes Column 3
+    );
+}
 
 // Transformation matrices
 INL mat4 mat4_translation(vec3 translation)
 {
     mat4 m = mat4_identity();
-    m.data[12] = translation.x;
-    m.data[13] = translation.y; 
-    m.data[14] = translation.z;
+    m.m03 = translation.x;
+    m.m13 = translation.y; 
+    m.m23 = translation.z;
     return m;
 }
 
@@ -548,6 +579,7 @@ INL mat4 mat4_scaling(vec3 scale)
     );
 }
 
+/*
 INL mat4 mat4_rotation_x(f32 angle)
 {
     f32 c = m_cos(angle);
@@ -601,11 +633,6 @@ INL mat4 mat4_rotation_xyz(vec3 angles)
     );
 }
 
-INL mat4 mat4_rotation_xyz_angles(f32 x_rad, f32 y_rad, f32 z_rad)
-{
-    return mat4_rotation_xyz(vec3_create(x_rad, y_rad, z_rad));
-}
-
 INL mat4 mat4_inverse_rigid(mat4 m) {
 	mat4 result = {0};
     
@@ -621,9 +648,88 @@ INL mat4 mat4_inverse_rigid(mat4 m) {
     
     result.m15 = 1.0f;
 
-
 	return result;
 }
+*/
+
+INL mat4 mat4_rotation_x(f32 angle)
+{
+    f32 c = m_cos(angle);
+    f32 s = m_sin(angle);
+    return mat4_create(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, c,    s,    0.0f,
+        0.0f, -s,   c,    0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+}
+
+INL mat4 mat4_rotation_y(f32 angle)
+{
+    f32 c = m_cos(angle);
+    f32 s = m_sin(angle);
+    return mat4_create(
+        c,    0.0f, -s,   0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        s,    0.0f, c,    0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+}
+
+INL mat4 mat4_rotation_z(f32 angle)
+{
+    f32 c = m_cos(angle);
+    f32 s = m_sin(angle);
+    return mat4_create(
+        c,    s,    0.0f, 0.0f,
+        -s,   c,    0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+}
+
+INL mat4 mat4_rotation_xyz(vec3 angles)
+{
+    f32 cx = m_cos(angles.x);
+    f32 sx = m_sin(angles.x);
+    f32 cy = m_cos(angles.y);
+    f32 sy = m_sin(angles.y);
+    f32 cz = m_cos(angles.z);
+    f32 sz = m_sin(angles.z);
+
+    return mat4_create(
+        cy * cz,       			 cy * sz,       		  -sy,      0.0f,
+        cz * sx * sy - cx * sz,  cx * cz + sx * sy * sz,  cy * sx,  0.0f,
+        cx * cz * sy + sx * sz,  cx * sy * sz - cz * sx,  cx * cy,  0.0f,
+        0.0f,                    0.0f,                    0.0f,     1.0f
+    );
+}
+
+
+INL mat4 mat4_rotation_xyz_angles(f32 x_rad, f32 y_rad, f32 z_rad)
+{
+    return mat4_rotation_xyz(vec3_create(x_rad, y_rad, z_rad));
+}
+
+INL mat4 mat4_inverse_rigid(mat4 m) {
+    mat4 result = {0};
+    
+    // Transpose 3x3 rotation (columns become rows)
+    result.m00 = m.m00; result.m10 = m.m01; result.m20 = m.m02;  // Row 0
+    result.m01 = m.m10; result.m11 = m.m11; result.m21 = m.m12;  // Row 1
+    result.m02 = m.m20; result.m12 = m.m21; result.m22 = m.m22;  // Row 2
+    
+    // Inverse translation: -Rᵀ * T
+    float tx = m.m03, ty = m.m13, tz = m.m23;
+    result.m03 = -(result.m00 * tx + result.m01 * ty + result.m02 * tz);
+    result.m13 = -(result.m10 * tx + result.m11 * ty + result.m12 * tz);
+    result.m23 = -(result.m20 * tx + result.m21 * ty + result.m22 * tz);
+    
+    result.m33 = 1.0f;
+
+    return result;
+}
+
 
 /*************************
  * QUATERNION

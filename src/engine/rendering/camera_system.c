@@ -32,24 +32,6 @@ static void update_proj_pers(camera_t *cam, f32 aspect_ratio)
 }
 */
 
-void debug_fixed_union()
-{
-    mat4 test = {0};
-
-    printf("Fixed union test:\n");
-    printf("data[12] offset = %ld, m12 offset = %ld\n",
-           (char *)&test.data[12] - (char *)&test,
-           (char *)&test.m12 - (char *)&test);
-    printf("data[14] offset = %ld, m14 offset = %ld\n",
-           (char *)&test.data[14] - (char *)&test,
-           (char *)&test.m14 - (char *)&test);
-
-    test.data[14] = 50.0f;
-    printf("After data[14]=50: m14=%f\n", test.m14);
-
-    test.m14 = 100.0f;
-    printf("After m14=100: data[14]=%f\n", test.data[14]);
-}
 static void recalculate_matrix(camera_t *cam)
 {
     if (!cam) return;
@@ -100,8 +82,6 @@ camera_system_t *camera_sys_init(arena_alloc_t *arena)
     cs->world.rotation = vec3_zero();
     cs->world.proj_type = CAMERA_PROJECTION_PERSPECTIVE;
     cs->world.dirty = true;
-
-    debug_fixed_union();
 
     g_cs = cs;
     LOG_INFO("Camera System Init");
