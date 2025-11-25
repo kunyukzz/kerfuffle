@@ -78,7 +78,7 @@ camera_system_t *camera_sys_init(arena_alloc_t *arena)
     cs->world.near = 0.1f;
     cs->world.far = 100.0f;
     cs->world.fov = 45.0f;
-    cs->world.position = (vec3){{0.0f, 0.0f, 3.0f}};
+    cs->world.position = (vec3){{0.0f, 0.0f, 5.0f}};
     cs->world.rotation = vec3_zero();
     cs->world.proj_type = CAMERA_PROJECTION_PERSPECTIVE;
     cs->world.dirty = true;

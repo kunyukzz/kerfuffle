@@ -23,7 +23,8 @@ b8 application_init(application_t *app)
     app->game = game_init();
 
     // TODO: temp
-    shader_sys_set(app->sh, "shaders/test");
+    shader_sys_set(&app->sh->object_shader, "shaders/test");
+    shader_sys_set(&app->sh->light_shader, "shaders/light");
     // shader_sys_bind(app->sh);
 
 #if DEBUG
@@ -127,13 +128,41 @@ b8 application_run(application_t *app)
         game_render(app->game, delta);
         camera_update(app->cs);
 
-        shader_sys_bind(app->sh);
         render_sys_begin(app->rs, WORLD_PASS);
 
         // TODO: temp code
-        shader_sys_set_uniform_mat4(app->sh, mat4_identity());
+        static f32 orbit_angle = 0.0f;
+        orbit_angle += (f32)delta * 1.0f;
+        float radius = 10.0f;
+
+        // orbiting around origin (Y axis)
+        vec3 light_pos = {
+            {m_cos(orbit_angle) * radius, 0.0f, m_sin(orbit_angle) * radius}};
+        mat4 light_model = mat4_translation(light_pos);
+        mat4 scale_mat = mat4_scaling((vec3){{0.2f, 0.2f, 0.2f}});
+        light_model = mat4_mul(light_model, scale_mat);
+
+        vec3 view_pos = app->cs->world.position;
+        vec3 obj_color = (vec3){{0.0f, 1.0f, 0.0f}};
+        vec3 light_color = (vec3){{1.0f, 1.0f, 1.0f}};
+
+        shader_sys_bind(&app->sh->object_shader);
+        shader_sys_set_uniform_mat4(&app->sh->object_shader, mat4_identity());
+
+        shader_sys_set_vec3(&app->sh->object_shader,
+                            app->sh->object_shader.light_pos, light_pos);
+        shader_sys_set_vec3(&app->sh->object_shader,
+                            app->sh->object_shader.view_pos, view_pos);
+        shader_sys_set_vec3(&app->sh->object_shader,
+                            app->sh->object_shader.object_color, obj_color);
+        shader_sys_set_vec3(&app->sh->object_shader,
+                            app->sh->object_shader.light_color, light_color);
 
         render_draw(app->rs);
+
+        shader_sys_bind(&app->sh->light_shader);
+        shader_sys_set_uniform_mat4(&app->sh->light_shader, light_model);
+        render_light(app->rs);
 
         render_sys_end(app->rs, WORLD_PASS);
 

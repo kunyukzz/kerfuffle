@@ -27,22 +27,34 @@ static GLuint compile_shader(GLenum type, const char *src)
 
 static void init_mesh(render_system_t *rs, render_mesh_t *mesh)
 {
+    if (mesh->vao != 0)
+    {
+        glDeleteVertexArrays(1, &mesh->vao);
+        glDeleteBuffers(1, &mesh->vbo);
+        glDeleteBuffers(1, &mesh->ebo);
+    }
+
     glGenVertexArrays(1, &mesh->vao);
     glBindVertexArray(mesh->vao);
 
     glGenBuffers(1, &mesh->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-    glBufferData(GL_ARRAY_BUFFER, rs->vertices_size, rs->vertices,
+    glBufferData(GL_ARRAY_BUFFER, rs->geo->vert_size, rs->geo->vertices,
                  GL_STATIC_DRAW);
 
     glGenBuffers(1, &mesh->ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, rs->indices_size, rs->indices,
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, rs->geo->indices_size,
+                 rs->geo->indices, GL_STATIC_DRAW);
 
     // position attribute
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex),
+                          (void *)OFFSETOF(vertex, position));
+
+    // normal attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex),
                           (void *)OFFSETOF(vertex, position));
 
     glBindVertexArray(0);
@@ -57,6 +69,10 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     rs->arena = arena;
     rs->cam = get_camera_system();
     rs->rs_mesh = ALLOC(sizeof(render_mesh_t), MEM_RENDER);
+    rs->rs_quad = ALLOC(sizeof(render_mesh_t), MEM_RENDER);
+    rs->rs_light = ALLOC(sizeof(render_mesh_t), MEM_RENDER);
+
+    rs->geo = ALLOC(sizeof(render_geo_t), MEM_RENDER);
 
     // glad setup
     int version_glad = gladLoadGL();
@@ -67,15 +83,16 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     }
 
     rs->current_fbo = 0;
-    rs->clear_color = (vec4){{1.0f, 0.0f, 0.0f, 1.0f}};
+    rs->clear_color = (vec4){{0.0f, 0.0f, 0.0f, 1.0f}};
 
     // set renderpass
     rs->main_pass = (render_pass_t){.fbo = rs->main_fbo,
-                                    .clear_color = {{1.0f, 0.0f, 0.0f, 1.0f}},
+                                    .clear_color = rs->clear_color,
                                     .clear_mask = GL_COLOR_BUFFER_BIT |
                                                   GL_DEPTH_BUFFER_BIT};
 
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(rs->clear_color.r, rs->clear_color.g, rs->clear_color.b,
+                 rs->clear_color.a);
     glViewport(0, 0, 1280, 720);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -86,7 +103,6 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
 
     // TODO: Temporary code start
     vertex *vert = ALLOC(sizeof(vertex) * 24, MEM_ARRAY);
-
     vec3 normal_front = (vec3){{0.0f, 0.0f, 1.0f}};
     vec3 normal_back = (vec3){{0.0f, 0.0f, -1.0f}};
     vec3 normal_right = (vec3){{1.0f, 0.0f, 0.0f}};
@@ -200,14 +216,50 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     indcs[33] = 20; indcs[34] = 21; indcs[35] = 23; // second
     // clang-format on
 
-    rs->vertices = vert;
-    rs->vertices_count = 24;
-    rs->vertices_size = rs->vertices_count * sizeof(vertex);
-    rs->indices = indcs;
-    rs->indices_count = 36;
-    rs->indices_size = rs->indices_count * sizeof(u32);
+    rs->geo->vertices = vert;
+    rs->geo->vert_count = 24;
+    rs->geo->vert_size = rs->geo->vert_count * sizeof(vertex);
+    rs->geo->indices = indcs;
+    rs->geo->indices_count = 36;
+    rs->geo->indices_size = rs->geo->indices_count * sizeof(u32);
 
     init_mesh(rs, rs->rs_mesh);
+    init_mesh(rs, rs->rs_light);
+
+    vertex *qvert = ALLOC(sizeof(vertex) * 4, MEM_ARRAY);
+    f32 size = 5.0f;
+    qvert[0] =
+        (vertex){.position = (vec3){{-0.5f * size, -0.5f, -0.5f * size}},
+                 .normal = normal_top,
+                 .texcoord = uv_01};
+    qvert[1] = (vertex){.position = (vec3){{0.5f * size, -0.5f, -0.5f * size}},
+                        .normal = normal_top,
+                        .texcoord = uv_11};
+    qvert[2] = (vertex){.position = (vec3){{-0.5f * size, -0.5f, 0.5f * size}},
+                        .normal = normal_top,
+                        .texcoord = uv_00};
+    qvert[3] = (vertex){.position = (vec3){{0.5f * size, -0.5f, 0.5f * size}},
+                        .normal = normal_top,
+                        .texcoord = uv_10};
+
+    u32 *qindcs = ALLOC(sizeof(u32) * 6, MEM_ARRAY);
+    // front
+    qindcs[0] = 0;
+    qindcs[1] = 2;
+    qindcs[2] = 3; // first
+    qindcs[3] = 0;
+    qindcs[4] = 3;
+    qindcs[5] = 1; // second
+
+    rs->geo->vertices = qvert;
+    rs->geo->vert_count = 4;
+    rs->geo->vert_size = rs->geo->vert_count * sizeof(vertex);
+    rs->geo->indices = qindcs;
+    rs->geo->indices_count = 6;
+    rs->geo->indices_size = rs->geo->indices_count * sizeof(u32);
+
+    init_mesh(rs, rs->rs_quad);
+
     // TODO: Temporary code end
 
     // world
@@ -218,6 +270,11 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, rs->ubo_buffer);
 
+    FREE(vert, sizeof(vertex), MEM_ARRAY);
+    FREE(indcs, sizeof(u32), MEM_ARRAY);
+    FREE(qvert, sizeof(vertex), MEM_ARRAY);
+    FREE(qindcs, sizeof(u32), MEM_ARRAY);
+
     LOG_TRACE("Renderer: %s", glGetString(GL_RENDERER));
     LOG_INFO("Render System Init");
     return rs;
@@ -227,13 +284,25 @@ void render_sys_kill(render_system_t *rs)
 {
     if (!rs) return;
 
-    FREE(rs->vertices, sizeof(vertex) * rs->vertices_count, MEM_ARRAY);
-    FREE(rs->indices, sizeof(u32) * rs->indices_count, MEM_ARRAY);
+    // FREE(rs->geo->vertices, sizeof(vertex) * rs->geo->vert_count,
+    // MEM_ARRAY); FREE(rs->geo->indices, sizeof(u32) * rs->geo->indices_count,
+    // MEM_ARRAY);
+
+    glDeleteVertexArrays(1, &rs->rs_light->vao);
+    glDeleteBuffers(1, &rs->rs_light->vbo);
+    glDeleteBuffers(1, &rs->rs_light->ebo);
+
+    glDeleteVertexArrays(1, &rs->rs_quad->vao);
+    glDeleteBuffers(1, &rs->rs_quad->vbo);
+    glDeleteBuffers(1, &rs->rs_quad->ebo);
 
     glDeleteVertexArrays(1, &rs->rs_mesh->vao);
     glDeleteBuffers(1, &rs->rs_mesh->vbo);
     glDeleteBuffers(1, &rs->rs_mesh->ebo);
 
+    FREE(rs->geo, sizeof(render_geo_t), MEM_RENDER);
+    FREE(rs->rs_light, sizeof(render_mesh_t), MEM_RENDER);
+    FREE(rs->rs_quad, sizeof(render_mesh_t), MEM_RENDER);
     FREE(rs->rs_mesh, sizeof(render_mesh_t), MEM_RENDER);
     memset(rs, 0, sizeof(render_system_t));
     LOG_INFO("Render System Kill");
@@ -254,13 +323,6 @@ void render_sys_begin(render_system_t *rs, u8 id)
         glBindFramebuffer(GL_FRAMEBUFFER, pass->fbo);
         rs->current_fbo = pass->fbo;
     }
-
-    /*
-    printf("proj[0][0]=%f proj[1][1]=%f\n", rs->cam->world.proj.data[0],
-           rs->cam->world.proj.data[5]);
-    printf("view[0][0]=%f view[1][1]=%f\n", rs->cam->world.view.data[0],
-           rs->cam->world.view.data[5]);
-    */
 
     // world
     glBindBuffer(GL_UNIFORM_BUFFER, rs->ubo_buffer);
@@ -289,7 +351,20 @@ void render_sys_update(render_system_t *rs, f64 delta)
 void render_draw(render_system_t *rs)
 {
     glBindVertexArray(rs->rs_mesh->vao);
-    glDrawElements(GL_TRIANGLES, (int)rs->indices_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, (int)rs->geo->indices_count, GL_UNSIGNED_INT,
+                   0);
+
+    glBindVertexArray(rs->rs_quad->vao);
+    glDrawElements(GL_TRIANGLES, (int)rs->geo->indices_count, GL_UNSIGNED_INT,
+                   0);
+    glBindVertexArray(0);
+}
+
+void render_light(render_system_t *rs)
+{
+    glBindVertexArray(rs->rs_light->vao);
+    glDrawElements(GL_TRIANGLES, (int)rs->geo->indices_count, GL_UNSIGNED_INT,
+                   0);
     glBindVertexArray(0);
 }
 

@@ -26,6 +26,25 @@ typedef struct {
 } render_ubo_t;
 
 typedef struct {
+    void *vertices;
+    u32 vert_count;
+    u32 vert_size;
+    void *indices;
+    u32 indices_count;
+    u32 indices_size;
+} render_geo_t;
+
+typedef struct {
+    u32 vert_count;
+    u32 vert_size;
+    u32 vert_offset;
+
+    u32 ind_count;
+    u32 ind_size;
+    u32 ind_offset;
+} internal_geo_t;
+
+typedef struct {
     arena_alloc_t *arena;
     camera_system_t *cam;
 
@@ -36,21 +55,18 @@ typedef struct {
     vec4 clear_color;
 
     u32 main_fbo;
-    u32 test_fbo;
+    // u32 test_fbo;
 
     render_mesh_t *rs_mesh;
+    render_mesh_t *rs_quad;
     render_mesh_t *rs_light;
 
     u32 ubo_buffer;
     render_ubo_t ubo;
 
     // TODO: temp vertex data
-    void *vertices;
-    void *indices;
-    u32 vertices_count;
-    u32 vertices_size;
-    u32 indices_count;
-    u32 indices_size;
+    render_geo_t *geo;
+
 } render_system_t;
 
 render_system_t *render_sys_init(arena_alloc_t *arena);
@@ -64,6 +80,8 @@ void render_sys_end(render_system_t *rs, u8 id);
 void render_sys_update(render_system_t *rs, f64 delta);
 
 void render_draw(render_system_t *rs);
+
+void render_light(render_system_t *rs); // NOTE: temp code.
 
 u32 render_upload_shader(const char *name);
 
